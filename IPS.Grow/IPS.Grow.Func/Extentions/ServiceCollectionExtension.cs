@@ -1,8 +1,13 @@
-﻿using IPS.Grow.Func.Configs;
+﻿using Azure.Messaging.ServiceBus;
+using IPS.Grow.Func.Configs;
 using IPS.Grow.Func.Services;
+using Microsoft.Azure.Cosmos;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using StackExchange.Redis;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using static System.ArgumentException;
 
 namespace IPS.Grow.Func.Extentions;
@@ -20,10 +25,44 @@ internal static class ServiceCollectionExtension
             var cm = ConnectionMultiplexer.Connect(options);
             return cm;
         });
-
         services.AddScoped<IOrderedListClient, RedisOrderedListClient>();
         return services;
     }
+
+    public static IServiceCollection AddServiceBus(this IServiceCollection services)
+    {
+        services.AddOptions<ServiceBusConfig>().BindConfiguration(ServiceBusConfig.Section);
+        services.AddSingleton(sp =>
+        {
+            var config = sp.GetOptionsValue<ServiceBusConfig>(nameof(ServiceBusConfig.ConnectionString));
+            return new ServiceBusClient(config.ConnectionString);
+        });
+
+        return services;
+    }
+
+    public static IServiceCollection AddCosmosService(this IServiceCollection services, bool allowBulkExecution = false)
+    {
+        services.AddOptions<CosmosConfiguration>().Configure<IConfiguration>((o, c) => c.GetSection(nameof(CosmosConfiguration)).Bind(o));
+        services.AddSingleton(sp =>
+        {
+            var config = sp.GetOptionsValue<CosmosConfiguration>();
+            var options = new CosmosClientOptions()
+            {
+                UseSystemTextJsonSerializerWithOptions = new JsonSerializerOptions
+                {
+                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                    DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+                },
+                MaxRetryWaitTimeOnRateLimitedRequests = TimeSpan.FromMinutes(1), // increased from 30 seconds to 60 seconds
+                AllowBulkExecution = allowBulkExecution,
+            };
+
+            return new CosmosClient(config.ConnectionString, options);
+        });
+        return services.AddSingleton<ICosmosService, CosmosService>();
+    }
+
     public static TData GetValue<TData>(this IOptions<TData> options, params string[] paramNames) where TData : class
     {
         var config = options.Value;

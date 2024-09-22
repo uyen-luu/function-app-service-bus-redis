@@ -10,6 +10,8 @@ var host = new HostBuilder()
         services.AddApplicationInsightsTelemetryWorkerService();
         services.ConfigureFunctionsApplicationInsights();
         services.AddRedisClient();
+        services.AddServiceBus();
+        services.AddCosmosService();
     })
     .Build();
 
