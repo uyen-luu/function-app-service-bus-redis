@@ -1,91 +1,49 @@
-﻿using IPS.Grow.Func.Configs;
-using IPS.Grow.Func.Extentions;
-using IPS.Grow.Func.Models;
+﻿using IPS.Grow.Func.Models;
 using IPS.Grow.Func.Services;
-using IPS.Grow.Func.Triggers.Entities;
-using IPS.Grow.Func.Utilities;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Azure.Cosmos;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.WebJobs.Extensions.OpenApi.Core.Attributes;
-using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
-using StackExchange.Redis;
 using System.Net.Mime;
-using Cosmos = IPS.Grow.Func.Entities.Cosmos;
 
-namespace IPS.Grow.Func.Triggers.Http
+namespace IPS.Grow.Func.Triggers.Http;
+
+internal class Retriever(IProductLookupService productService, ICacheService cacheService)
 {
-    internal class Retriever(ILogger<Retriever> logger, ICosmosService cosmosService, ConnectionMultiplexer redis)
+    [Function(nameof(GetProductAsync))]
+    [OpenApiOperation(operationId: nameof(GetProductAsync), tags: ["Product"], Description = "Get product data")]
+    [OpenApiResponseWithBody(System.Net.HttpStatusCode.OK, MediaTypeNames.Application.Json, typeof(ProductResponse))]
+    [OpenApiResponseWithoutBody(System.Net.HttpStatusCode.NotFound)]
+    [OpenApiParameter(name: "id", In = ParameterLocation.Path, Description = "The product Id", Required = true, Type = typeof(int))]
+    public async Task<IActionResult> GetProductAsync(
+    [HttpTrigger(AuthorizationLevel.Function, "get", Route = "products/{id:int}")] HttpRequest req,
+    int id)
     {
-        private readonly Task<Container> _container = cosmosService.GetContainerAsync(nameof(ContainerNames.Product));
-        private readonly Task<Container> _categoryContainer = cosmosService.GetContainerAsync(nameof(ContainerNames.ProductCategory));
-        private readonly IDatabase _redis = redis.GetDatabase();
+        var bid = new BusinessId(id.ToString(), BusinessObjectType.Product);
+        var result = await cacheService.TryReadApiCacheAsync(
+            bid,
+            () => productService.ReadProductAsync(id, req.HttpContext.RequestAborted),
+            req.HttpContext.RequestAborted);
         //
-        [Function(nameof(GetProductAsync))]
-        [OpenApiOperation(operationId: nameof(GetProductAsync), tags: ["Product"], Description = "Get product data")]
-        [OpenApiResponseWithBody(System.Net.HttpStatusCode.OK, MediaTypeNames.Application.Json, typeof(ProductResponse))]
-        [OpenApiResponseWithoutBody(System.Net.HttpStatusCode.NotFound)]
-        [OpenApiParameter(name: "id", In = ParameterLocation.Path, Description = "The product Id", Required = true, Type = typeof(int))]
-        public async Task<IActionResult> GetProductAsync(
-        [HttpTrigger(AuthorizationLevel.Function, "get", Route = "products/{id:int}")] HttpRequest req,
-        int id)
-        {
-            var key = new RedisKey(req.Path);
+        return result != null ? new OkObjectResult(result) : new NotFoundResult();
+    }
 
-            var json = await _redis.StringGetAsync(key);
-            ProductResponse? result = null;
-            if (json.HasValue)
-            {
-                result = MessageSerializer.Deserialize<ProductResponse>(json!);
-            }
-            else
-            {
-                result = await ReadDbAsync(id);
-
-                if (result == null)
-                {
-                    return new NotFoundResult();
-                }
-
-                json = MessageSerializer.Serialize(result);
-                await _redis.StringSetAsync(key, json);
-            }
-            return new OkObjectResult(result);
-        }
-
-        private async Task<ProductResponse?> ReadDbAsync(int id)
-        {
-            var container = await _container;
-            var product = await container.FindAsync<Cosmos.ProductEntity>(id.ToString(), ProductEntity.Pk);
-            if (product == null)
-            {
-                return null;
-            }
-            var result = new ProductResponse
-            {
-                Id = int.TryParse(product.Id, out var productId) ? productId : 0,
-                Name = product.Name,
-                Price = product.Price,
-                Categories = []
-            };
-            if (product.Categories.Length > 0)
-            {
-
-                var categoryContainer = await _categoryContainer;
-                var ids = product!.Categories.Select(i => $"'{i}'");
-                var queryText = $@"
-                                SELECT VALUE c.name 
-                                FROM c
-                                WHERE c.id IN ({string.Join(",", ids)})
-                            ";
-                var query = new QueryDefinition(queryText);
-                var categories = await categoryContainer.FetchAsync<string>(query, ProductEntity.Pk);
-                result.Categories = [.. categories];
-            }
-
-            return result;
-        }
+    [Function(nameof(GetCategoryAsync))]
+    [OpenApiOperation(operationId: nameof(GetCategoryAsync), tags: ["Product"], Description = "Get product data")]
+    [OpenApiResponseWithBody(System.Net.HttpStatusCode.OK, MediaTypeNames.Application.Json, typeof(ProductCategoryResponse))]
+    [OpenApiResponseWithoutBody(System.Net.HttpStatusCode.NotFound)]
+    [OpenApiParameter(name: "id", In = ParameterLocation.Path, Description = "The products of category", Required = true, Type = typeof(int))]
+    public async Task<IActionResult> GetCategoryAsync(
+    [HttpTrigger(AuthorizationLevel.Function, "get", Route = "categories/{id:int}/products")] HttpRequest req,
+    int id)
+    {
+        var bid = new BusinessId(id.ToString(), BusinessObjectType.ProductCategories);
+        var result = await cacheService.TryReadApiCacheAsync(
+            bid,
+            () => productService.ReadProductsAsync(id, req.HttpContext.RequestAborted),
+            req.HttpContext.RequestAborted);
+        //
+        return result != null ? new OkObjectResult(result) : new NotFoundResult();
     }
 }

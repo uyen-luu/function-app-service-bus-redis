@@ -25,8 +25,7 @@ internal static class ServiceCollectionExtension
             var cm = ConnectionMultiplexer.Connect(options);
             return cm;
         });
-        services.AddScoped<IOrderedListClient, RedisOrderedListClient>();
-        return services;
+        return services.AddSingleton<ICacheService, CacheService>();
     }
 
     public static IServiceCollection AddServiceBus(this IServiceCollection services)
@@ -52,7 +51,8 @@ internal static class ServiceCollectionExtension
                 UseSystemTextJsonSerializerWithOptions = new JsonSerializerOptions
                 {
                     PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-                    DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+                    DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+                    NumberHandling = JsonNumberHandling.AllowReadingFromString
                 },
                 MaxRetryWaitTimeOnRateLimitedRequests = TimeSpan.FromMinutes(1), // increased from 30 seconds to 60 seconds
                 AllowBulkExecution = allowBulkExecution,
@@ -60,7 +60,8 @@ internal static class ServiceCollectionExtension
 
             return new CosmosClient(config.ConnectionString, options);
         });
-        return services.AddSingleton<ICosmosService, CosmosService>();
+        return services.AddSingleton<ICosmosService, CosmosService>()
+            .AddSingleton<IProductLookupService, ProductLookupService>();
     }
 
     public static TData GetValue<TData>(this IOptions<TData> options, params string[] paramNames) where TData : class
