@@ -21,7 +21,7 @@ internal class ProductLookupService(ICosmosService cosmosService, ICacheService 
     public const string CategoryKey = "product-categories";
     public async Task<List<CategoryResponse>> ReadCategoriesAsync(CancellationToken ct = default)
     {
-        var result = await cacheService.TryReadAsync(CategoryKey, () => ReadAllCategoriesAsync(ct), RedisDbType.Category, ct);
+        var (_, result) = await cacheService.TryReadAsync(CategoryKey, () => ReadAllCategoriesAsync(ct), RedisDbType.Category, ct);
         return result!;
     }
 

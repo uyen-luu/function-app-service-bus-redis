@@ -13,12 +13,12 @@ public enum RedisDbType
 public interface ICacheService
 {
     Task<bool> RemoveApiCacheAsync(BusinessId bid, CancellationToken ct = default);
-    Task<TResult?> TryReadApiCacheAsync<TResult>(BusinessId bid,
+    Task<(string Source, TResult? Result)> TryReadApiCacheAsync<TResult>(BusinessId bid,
                                                  Func<Task<TResult?>> getValueAsync,
                                                  CancellationToken ct = default)
         where TResult : class;
 
-    Task<TResult?> TryReadAsync<TResult>(string key,
+    Task<(string Source, TResult? Result)> TryReadAsync<TResult>(string key,
                                          Func<Task<TResult?>> getValueAsync,
                                          RedisDbType dbType = RedisDbType.Default,
                                          CancellationToken ct = default)
@@ -33,7 +33,7 @@ internal class CacheService(ConnectionMultiplexer redisServer) : ICacheService
         return redisDb.KeyDeleteAsync(key);
     }
 
-    public Task<TResult?> TryReadApiCacheAsync<TResult>(BusinessId bid,
+    public Task<(string Source, TResult? Result)> TryReadApiCacheAsync<TResult>(BusinessId bid,
                                                      Func<Task<TResult?>> getValueAsync,
                                                      CancellationToken ct = default)
         where TResult : class
@@ -42,7 +42,7 @@ internal class CacheService(ConnectionMultiplexer redisServer) : ICacheService
         return TryReadAsync(key, getValueAsync, RedisDbType.Default, ct);
     }
 
-    public Task<TResult?> TryReadAsync<TResult>(string key,
+    public Task<(string Source, TResult? Result)> TryReadAsync<TResult>(string key,
                                                 Func<Task<TResult?>> getValueAsync,
                                                 RedisDbType dbType = RedisDbType.Default,
                                                 CancellationToken ct = default) where TResult : class
@@ -51,7 +51,7 @@ internal class CacheService(ConnectionMultiplexer redisServer) : ICacheService
     }
 
     #region Privates
-    private async Task<TResult?> TryReadAsync<TResult>(RedisKey key,
+    private async Task<(string Source, TResult? Result)> TryReadAsync<TResult>(RedisKey key,
                                                        Func<Task<TResult?>> getValueAsync,
                                                        RedisDbType dbType = RedisDbType.Default,
                                                        CancellationToken ct = default) where TResult : class
@@ -59,9 +59,11 @@ internal class CacheService(ConnectionMultiplexer redisServer) : ICacheService
         var redisDb = GetRedisDb(dbType);
         var json = await redisDb.StringGetAsync(key);
         TResult? result;
+        string fromSource = "Unknown";
         if (json.HasValue)
         {
             result = MessageSerializer.Deserialize<TResult>(json!);
+            fromSource = "Redis";
         }
         else
         {
@@ -72,9 +74,10 @@ internal class CacheService(ConnectionMultiplexer redisServer) : ICacheService
                 json = MessageSerializer.Serialize(result);
                 await redisDb.StringSetAsync(key, json, TimeSpan.FromMinutes(30));
             }
+            fromSource = "Cosmos";
         }
 
-        return result;
+        return (fromSource, result);
     }
 
     private IDatabase GetRedisDb(RedisDbType type) => redisServer.GetDatabase((int)type);

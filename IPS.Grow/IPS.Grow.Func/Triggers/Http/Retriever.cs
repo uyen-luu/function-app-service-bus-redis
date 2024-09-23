@@ -21,12 +21,18 @@ internal class Retriever(IProductLookupService productService, ICacheService cac
     int id)
     {
         var bid = new BusinessId(id.ToString(), BusinessObjectType.Product);
-        var result = await cacheService.TryReadApiCacheAsync(
+        var (Source, Result) = await cacheService.TryReadApiCacheAsync(
             bid,
             () => productService.ReadProductAsync(id, req.HttpContext.RequestAborted),
             req.HttpContext.RequestAborted);
         //
-        return result != null ? new OkObjectResult(result) : new NotFoundResult();
+        if (Result != null)
+        {
+            req.HttpContext.Response.Headers.TryAdd("Source", Source);
+            return new OkObjectResult(Result);
+        }
+        //
+        return new NotFoundResult();
     }
 
     [Function(nameof(GetCategoryAsync))]
@@ -39,11 +45,17 @@ internal class Retriever(IProductLookupService productService, ICacheService cac
     int id)
     {
         var bid = new BusinessId(id.ToString(), BusinessObjectType.ProductCategories);
-        var result = await cacheService.TryReadApiCacheAsync(
+        var (Source, Result) = await cacheService.TryReadApiCacheAsync(
             bid,
             () => productService.ReadProductsAsync(id, req.HttpContext.RequestAborted),
             req.HttpContext.RequestAborted);
         //
-        return result != null ? new OkObjectResult(result) : new NotFoundResult();
+        if (Result != null)
+        {
+            req.HttpContext.Response.Headers.TryAdd("Source", Source);
+            return new OkObjectResult(Result);
+        }
+        //
+        return new NotFoundResult();
     }
 }
