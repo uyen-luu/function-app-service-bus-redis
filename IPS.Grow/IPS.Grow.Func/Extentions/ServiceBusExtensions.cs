@@ -1,6 +1,6 @@
 ﻿using Azure.Messaging.ServiceBus;
 using IPS.Grow.Func.Models;
-using IPS.Grow.Func.Utilities;
+using IPS.Grow.Shared.Utilities;
 
 namespace IPS.Grow.Func.Extentions;
 

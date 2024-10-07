@@ -1,6 +1,0 @@
-@IPS.Grow.OWASP.Web.Server_HostAddress = http://localhost:5145
-
-GET {{IPS.Grow.OWASP.Web.Server_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###

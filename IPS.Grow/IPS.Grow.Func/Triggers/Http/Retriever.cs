@@ -1,9 +1,9 @@
-﻿using IPS.Grow.Func.Configs;
-using IPS.Grow.Func.Extentions;
-using IPS.Grow.Func.Models;
-using IPS.Grow.Func.Services;
+﻿using IPS.Grow.Func.Models;
 using IPS.Grow.Func.Triggers.Entities;
-using IPS.Grow.Func.Utilities;
+using IPS.Grow.Shared.Configs;
+using IPS.Grow.Shared.Extensions;
+using IPS.Grow.Shared.Services;
+using IPS.Grow.Shared.Utilities;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Cosmos;
