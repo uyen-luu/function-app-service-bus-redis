@@ -5,10 +5,12 @@ namespace IPS.Grow.Infra.Cryptographic;
 
 public class EncodingFactory
 {
-    public static byte[] HashPassword256(string password)
+    public static string GenerateRandomString(int length)
     {
-        var encoding = new UnicodeEncoding();
-        return SHA256.HashData(encoding.GetBytes(password));
+        using var rng = RandomNumberGenerator.Create();
+        byte[] randomBytes = new byte[length];
+        rng.GetBytes(randomBytes);
+        return Convert.ToBase64String(randomBytes);
     }
 
     public static byte[] ComputeHash(string input, HashAlgorithmType hashAlgorithmType, EncodingType encodingType = EncodingType.Unicode)

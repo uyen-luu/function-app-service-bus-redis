@@ -7,17 +7,20 @@ using System.Text.Json.Serialization;
 
 namespace IPS.Grow.Infra.Models;
 
-public class LoginModel
+public class LoginModel : NewUserModel
 {
     /// <summary>
     /// User identifier - email address
     /// </summary>
     /// <example>uyen.luu@enlabsoftware.com</example>
+    [EmailAddress]
+    [MaxLength(50)]
     public required string Username { get; init; }
     /// <summary>
-    /// Your password
+    /// Your password , maximum 50 characters
     /// </summary>
     /// <example>my-password</example>
+    [MaxLength(50)]
     public required string Password { get; init; }
     /// <summary>
     /// Remember for 7 days if true, otherwise one day
@@ -25,6 +28,20 @@ public class LoginModel
     [DefaultValue(false)]
     public bool RememberMe { get; set; }
 };
+
+public class NewUserModel
+{
+    /// <summary>
+    /// User identifier - email address
+    /// </summary>
+    /// <example>uyen.luu@enlabsoftware.com</example>
+    [EmailAddress]
+    [MaxLength(50)]
+    public required string EmailAddress { get; init; }
+    public string? FirstName { get; init; }
+    public string? LastName { get; init; }
+    public UserRoleType[] Roles { get; set; }
+}
 
 public record UserViewModel(string Username,
                             string Email,

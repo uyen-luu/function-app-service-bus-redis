@@ -3,6 +3,7 @@ using IPS.Grow.Infra.Convertors;
 using IPS.Grow.Infra.Cryptographic;
 using IPS.Grow.Infra.Entities.Cosmos;
 using IPS.Grow.Infra.Models;
+using IPS.Grow.Infra.Resources;
 using IPS.Grow.Shared.Configs;
 using IPS.Grow.Shared.Extensions;
 using IPS.Grow.Shared.Monads;
@@ -17,6 +18,7 @@ public interface IAuthService
     Task<Maybe<UserViewModel>> LoginAsync(LoginModel user, string ipAddress, CancellationToken ct = default);
     Task<ApiResponse> RevokeTokenAsync(string token, string username, string ipAddress, CancellationToken ct = default);
     Task<Maybe<UserViewModel>> RefreshTokenAsync(string token, string username, string ipAddress, CancellationToken ct = default);
+    Task<ApiResponse> CreateUserAsync(NewUserModel user, CancellationToken ct = default);
 }
 
 internal class AuthService(ICosmosService cosmosService, TokenFactory tokenFactory) : IAuthService
@@ -99,6 +101,41 @@ internal class AuthService(ICosmosService cosmosService, TokenFactory tokenFacto
             };
         });
     }
+
+    public async Task<ApiResponse> CreateUserAsync(NewUserModel input, CancellationToken ct = default)
+    {
+        var key = input.EmailAddress.ToLowerInvariant();
+        var salt = Guid.NewGuid();
+        var randomPassowrd = EncodingFactory.GenerateRandomString(8);
+        var secretKey = string.Concat(randomPassowrd, salt);
+        var hashed = EncodingFactory.GetHashString(secretKey, HashAlgorithmType.SHA256);
+        var user = new UserEntity
+        {
+            EmailAddress = key,
+            FirstName = input.FirstName,
+            LastName = input.LastName,
+            Id = key,
+            Pk = key,
+            Salt = salt,
+            UserName = key,
+            Created = DateTime.UtcNow,
+            Roles = input.Roles,
+            Password = hashed
+        };
+
+        var container = await _container;
+
+        try
+        {
+            await container.CreateItemAsync(user, cancellationToken: ct);
+            return ApiResponse.Success(randomPassowrd);
+        }
+        catch (Exception ex)
+        {
+            return ApiResponse.Error(ErrorMessages.ServerError);
+        }
+    }
+
 
     #region Privates
     private async Task<Maybe<UserViewModel>> GetUserByIdAsync(string username, CancellationToken ct = default)
