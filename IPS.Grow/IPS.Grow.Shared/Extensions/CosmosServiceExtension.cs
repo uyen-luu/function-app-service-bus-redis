@@ -134,7 +134,11 @@ public static class CosmosServiceExtension
 
     public static IServiceCollection AddCosmosService(this IServiceCollection services, bool allowBulkExecution = false)
     {
-        services.AddOptions<CosmosConfiguration>().Configure<IConfiguration>((o, c) => c.GetSection(nameof(CosmosConfiguration)).Bind(o));
+        services.AddOptions<CosmosConfiguration>()
+            .Configure<IConfiguration>((o, c) => c.GetSection(nameof(CosmosConfiguration)).Bind(o))
+            .ValidateDataAnnotations()
+            .Validate(c => !string.IsNullOrEmpty(c.ConnectionString))
+            .ValidateOnStart();
         services.AddSingleton(sp =>
         {
             var config = sp.GetOptionsValue<CosmosConfiguration>();
