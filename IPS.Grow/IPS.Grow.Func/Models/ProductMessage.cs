@@ -4,6 +4,7 @@ public class ProductMessage
 {
     public required string Name { get; set; }
     public decimal Price { get; set; }
+    public int[] Categories { get; set; } = [];
 }
 
 public class ProductState : ProductMessage
@@ -13,8 +14,14 @@ public class ProductState : ProductMessage
 }
 
 
-public class ProductCategoriesMessage
+public class ProductCategoryMessage
 {
     public required string Name { get; set; }
+}
+
+public class ProductCategoryState : ProductCategoryMessage
+{
+    public DateTime? Created { get; set; }
+    public DateTime? LastModified { get; set; }
 }
 

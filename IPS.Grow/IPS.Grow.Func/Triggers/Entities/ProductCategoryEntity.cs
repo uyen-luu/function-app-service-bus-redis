@@ -13,26 +13,24 @@ using Cosmos = IPS.Grow.Func.Entities.Cosmos;
 
 namespace IPS.Grow.Func.Triggers.Entities;
 
-internal class ProductEntity(ICosmosService cosmosService) : TaskEntity<ProductState?>, IBaseEntity<ProductMessage>
+internal class ProductCategoryEntity(ICosmosService cosmosService) : TaskEntity<ProductCategoryState?>, IBaseEntity<ProductCategoryMessage>
 {
-    private static readonly string Pk = ProductLookupService.ProductPk;
-    internal static EntityInstanceId CreateEntityId(BusinessId bid) => new(nameof(ProductEntity), bid.Idetifier);
-    private readonly Task<Container> _container = cosmosService.GetContainerAsync(nameof(ContainerNames.Product));
-    [Function(nameof(ProductEntity))]
+    private static readonly string Pk = ProductLookupService.CategoryPk;
+    internal static EntityInstanceId CreateEntityId(BusinessId bid) => new(nameof(ProductCategoryEntity), bid.Idetifier);
+    private readonly Task<Container> _container = cosmosService.GetContainerAsync(nameof(ContainerNames.ProductCategory));
+    [Function(nameof(ProductCategoryEntity))]
     public static Task RunEntityAsync([EntityTrigger] TaskEntityDispatcher dispatcher)
     {
-        return dispatcher.DispatchAsync<ProductEntity>();
+        return dispatcher.DispatchAsync<ProductCategoryEntity>();
     }
 
-    protected override ProductState? InitializeState(TaskEntityOperation entityOperation)
+    protected override ProductCategoryState? InitializeState(TaskEntityOperation entityOperation)
     {
         var container = _container.GetAwaiter().GetResult();
-        var data = container.FindAsync<Cosmos.ProductEntity>(Context.Id.Key, Pk).GetAwaiter().GetResult();
-        return data != null ? new ProductState
+        var data = container.FindAsync<Cosmos.ProductCategoryEntity>(Context.Id.Key, Pk).GetAwaiter().GetResult();
+        return data != null ? new ProductCategoryState
         {
             Name = data.Name,
-            Price = data.Price,
-            Categories = data.Categories,
             Created = data.Created,
             LastModified = data.LastModified,
         } : base.InitializeState(entityOperation);
@@ -45,20 +43,18 @@ internal class ProductEntity(ICosmosService cosmosService) : TaskEntity<ProductS
             PatchOperation.Set($"/{(State!.Created.HasValue ? CosmosProperty.LastModified : CosmosProperty.Created)}",  DateTime.UtcNow),
             PatchOperation.Set($"/{CosmosProperty.Status}",ProductStatusType.Obsoleted.ToString() ),
         };
-        var res = await container.PatchItemAsync<Cosmos.ProductEntity>(Context.Id.Key, new PartitionKey(Pk), operations);
+        var res = await container.PatchItemAsync<Cosmos.ProductCategoryEntity>(Context.Id.Key, new PartitionKey(Pk), operations);
         State = null;
         return res.StatusCode == HttpStatusCode.OK;
     }
 
-    public async Task<bool> UpsertAsync(ProductMessage input)
+    public async Task<bool> UpsertAsync(ProductCategoryMessage input)
     {
         var container = await _container;
-        var product = new Cosmos.ProductEntity
+        var product = new Cosmos.ProductCategoryEntity
         {
             Id = Context.Id.Key,
             Name = input!.Name,
-            Price = input!.Price,
-            Categories = input!.Categories,
             Pk = Pk,
             Status = ProductStatusType.Active,
             Created = State!.Created.HasValue ? State!.Created.Value : DateTime.UtcNow,
@@ -68,11 +64,9 @@ internal class ProductEntity(ICosmosService cosmosService) : TaskEntity<ProductS
         var res = await container.UpsertItemAsync(product, new PartitionKey(Pk));
         if (res.StatusCode == HttpStatusCode.OK)
         {
-            State = new ProductState
+            State = new ProductCategoryState
             {
                 Name = res.Resource.Name,
-                Price = res.Resource.Price,
-                Categories = res.Resource.Categories,
                 Created = res.Resource?.Created,
                 LastModified = res.Resource?.LastModified,
             };

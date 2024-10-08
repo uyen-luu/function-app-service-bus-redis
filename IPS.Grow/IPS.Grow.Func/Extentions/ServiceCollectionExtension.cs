@@ -20,8 +20,7 @@ internal static class ServiceCollectionExtension
             var cm = ConnectionMultiplexer.Connect(options);
             return cm;
         });
-        services.AddScoped<IOrderedListClient, RedisOrderedListClient>();
-        return services;
+        return services.AddSingleton<ICacheService, CacheService>();
     }
 
     public static IServiceCollection AddServiceBus(this IServiceCollection services)

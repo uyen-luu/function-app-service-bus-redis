@@ -71,7 +71,7 @@ public class AuthController(IAuthService authService) : BaseApiController
     }
 
     [AllowAnonymous]
-    [HttpPost("login")]
+    [HttpPost("user")]
     [ProducesResponseType(typeof(UserViewModel), StatusCodes.Status200OK)]
     public async Task<IActionResult> AddUserAsync(NewUserModel user, CancellationToken ct = default)
     {

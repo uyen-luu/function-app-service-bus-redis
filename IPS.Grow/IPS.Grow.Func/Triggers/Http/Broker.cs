@@ -2,6 +2,7 @@ using Azure.Messaging.ServiceBus;
 using IPS.Grow.Func.Configs;
 using IPS.Grow.Func.Extentions;
 using IPS.Grow.Func.Models;
+using IPS.Grow.Func.Utilities;
 using IPS.Grow.Shared.Extensions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -9,6 +10,7 @@ using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.WebJobs.Extensions.OpenApi.Core.Attributes;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using System.Net;
 using System.Net.Mime;
 
 namespace IPS.Grow.Func.Triggers.Http;
@@ -19,48 +21,54 @@ public class Broker(ILogger<Broker> logger, ServiceBusClient sbClient, IOptions<
 
     [Function(nameof(CreateSingleMessages))]
     [OpenApiOperation(operationId: nameof(CreateSingleMessages), tags: ["Broker"], Description = "Create product messages to sb-single")]
-    [OpenApiResponseWithBody(System.Net.HttpStatusCode.OK, MediaTypeNames.Text.Plain, typeof(string))]
+    [OpenApiResponseWithBody(HttpStatusCode.OK, MediaTypeNames.Application.Json, typeof(ApiResponse))]
     public async Task<IActionResult> CreateSingleMessages(
         [HttpTrigger(AuthorizationLevel.Function, "post", Route = "messages/single")] HttpRequest req)
     {
-        var brokerMsg = GenerateProductUpsertMessages();
-        await sbClient.SendMessageAsync(_config.QueueNames.Single, brokerMsg.ToArray()).ConfigureAwait(false);
+        var res = await SendMesasgesAsync(_config.QueueNames.Single, req.HttpContext.RequestAborted).ConfigureAwait(false);
         //
-        logger.LogInformation("C# HTTP trigger function processed a request.");
-        return new OkObjectResult("Completed");
+        return new OkObjectResult(res);
     }
 
     [Function(nameof(CreateBatchMessages))]
     [OpenApiOperation(operationId: nameof(CreateBatchMessages), tags: ["Broker"], Description = "Create product messages to sb-batch")]
-    [OpenApiResponseWithBody(System.Net.HttpStatusCode.OK, MediaTypeNames.Text.Plain, typeof(string))]
+    [OpenApiResponseWithBody(HttpStatusCode.OK, MediaTypeNames.Application.Json, typeof(ApiResponse))]
     public async Task<IActionResult> CreateBatchMessages(
         [HttpTrigger(AuthorizationLevel.Function, "post", Route = "messages/batch")] HttpRequest req)
     {
-        var brokerMsg = GenerateProductUpsertMessages();
-        await sbClient.SendMessageAsync(_config.QueueNames.Batch, brokerMsg.ToArray()).ConfigureAwait(false);
-        logger.LogInformation("C# HTTP trigger function processed a request.");
-        return new OkObjectResult("Completed");
+        var res = await SendMesasgesAsync(_config.QueueNames.Batch, req.HttpContext.RequestAborted).ConfigureAwait(false);
+        //
+        return new OkObjectResult(res);
     }
 
-    private static BrokerMessage<ProductMessage>[] GenerateProductUpsertMessages()
+
+    #region Privates
+    private async Task<ApiResponse> SendMesasgesAsync(string queueName, CancellationToken ct = default)
     {
-        var random = new Random();
-        return Enumerable.Range(1, 10)
-            .Select(i =>
+        var brokerMsg = DataFactory.GenerateBrokerMessages();
+        var serviceBusMessages = brokerMsg.ToServiceBusMessages();
+        try
+        {
+            await sbClient.SendMessageAsync(queueName, ct, serviceBusMessages).ConfigureAwait(false);
+            return new ApiResponse
             {
-                var product = new ProductMessage
-                {
-                    Name = $"Product {i}",
-                    Price = random.Next(0, 100)
-                };
-                return new BrokerMessage<ProductMessage>
-                {
-                    MessageId = Guid.NewGuid(),
-                    Timestamp = DateTime.UtcNow,
-                    Bid = new BusinessId(i.ToString(), BusinessObjectType.Product),
-                    Data = product,
-                    Operation = BrokerOperation.Upsert
-                };
-            }).ToArray();
+                Status = ApiResponseStatus.Successed,
+                StatusCode = HttpStatusCode.OK,
+                Data = brokerMsg,
+                Message = $"All messages have been sent to Service Bus Queue \"{queueName}\""
+            };
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex.ToString());
+            return new ApiResponse
+            {
+                Status = ApiResponseStatus.Failed,
+                StatusCode = HttpStatusCode.InternalServerError,
+                Data = ex,
+                Message = ex.Message
+            };
+        }
     }
+    #endregion
 }
