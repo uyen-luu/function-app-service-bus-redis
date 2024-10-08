@@ -7,7 +7,7 @@ using System.Text.Json.Serialization;
 
 namespace IPS.Grow.Infra.Models;
 
-public class LoginModel : NewUserModel
+public class LoginModel
 {
     /// <summary>
     /// User identifier - email address
@@ -40,7 +40,7 @@ public class NewUserModel
     public required string EmailAddress { get; init; }
     public string? FirstName { get; init; }
     public string? LastName { get; init; }
-    public UserRoleType[] Roles { get; set; }
+    public UserRoleType[] Roles { get; set; } = [];
 }
 
 public record UserViewModel(string Username,
@@ -54,8 +54,7 @@ public record UserViewModel(string Username,
     [JsonIgnore]
     public string? RefreshToken { get; set; }
     public string? JwtToken { get; set; }
-    public IList<int> Roles { get; set; } = [];
-    public string? DefaultJobDocumentsPath { get; set; }
+    public UserRoleType[] Roles { get; set; } = [];
     public Claim[] GetClaims()
     {
         var claims = new[] {

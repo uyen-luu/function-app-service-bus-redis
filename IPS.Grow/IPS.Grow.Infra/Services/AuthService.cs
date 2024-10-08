@@ -130,9 +130,13 @@ internal class AuthService(ICosmosService cosmosService, TokenFactory tokenFacto
             await container.CreateItemAsync(user, cancellationToken: ct);
             return ApiResponse.Success(randomPassowrd);
         }
-        catch (Exception ex)
+        catch (CosmosException ex)
         {
-            return ApiResponse.Error(ErrorMessages.ServerError);
+            return ex.StatusCode switch
+            {
+                System.Net.HttpStatusCode.Conflict => ApiResponse.Error("Invalid sign up"),
+                _ => ApiResponse.Error(ErrorMessages.ServerError)
+            };
         }
     }
 

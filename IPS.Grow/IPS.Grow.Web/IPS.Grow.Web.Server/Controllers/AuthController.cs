@@ -43,7 +43,7 @@ public class AuthController(IAuthService authService) : BaseApiController
     public async Task<IActionResult> RefreshTokenAsync(CancellationToken ct = default)
     {
         if (string.IsNullOrEmpty(RefreshToken))
-            return Accepted();
+            return NoContent();
         //
         var res = await authService.RefreshTokenAsync(RefreshToken, Username, IpAddress, ct);
         return res.Match(token =>
@@ -72,7 +72,7 @@ public class AuthController(IAuthService authService) : BaseApiController
 
     [AllowAnonymous]
     [HttpPost("user")]
-    [ProducesResponseType(typeof(UserViewModel), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status200OK)]
     public async Task<IActionResult> AddUserAsync(NewUserModel user, CancellationToken ct = default)
     {
         var res = await authService.CreateUserAsync(user, ct);

@@ -5,9 +5,12 @@ namespace IPS.Grow.Infra.Convertors;
 
 internal static class CosmosConverter
 {
-    public static UserViewModel Convert(this UserEntity employee) => new(employee.UserName,
-                                                                         employee.EmailAddress,
-                                                                         employee.FirstName,
-                                                                         employee.LastName,
-                                                                         employee.MobileNumber);
+    public static UserViewModel Convert(this UserEntity user) => new(user.UserName,
+                                                                         user.EmailAddress,
+                                                                         user.FirstName,
+                                                                         user.LastName,
+                                                                         user.MobileNumber)
+    {
+        Roles = user.Roles
+    };
 }

@@ -1,9 +1,9 @@
-﻿using IPS.Grow.Infra.Entities.Cosmos;
+﻿using IPS.Grow.Infra.Cryptographic;
+using IPS.Grow.Infra.Entities.Cosmos;
 using IPS.Grow.Infra.Models;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using System.Security.Cryptography;
 using System.Text;
 
 namespace IPS.Grow.Infra.AccessControl;
@@ -45,7 +45,7 @@ public class TokenFactory(JwtSettings settings)
     {
         return new RefreshTokenEntity
         {
-            Id = Convert.ToBase64String(RandomNumberGenerator.GetBytes(64)),
+            Id = EncodingFactory.GenerateRandomString(64),
             // Remembered: forever; else within than one day.
             ExpiryDate = rememberMe ? DateTime.UtcNow.AddDays(settings.RefreshExpiryDays) : DateTime.UtcNow.AddHours(12),
             Created = DateTime.UtcNow,

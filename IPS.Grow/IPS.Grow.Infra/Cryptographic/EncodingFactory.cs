@@ -8,9 +8,21 @@ public class EncodingFactory
     public static string GenerateRandomString(int length)
     {
         using var rng = RandomNumberGenerator.Create();
-        byte[] randomBytes = new byte[length];
+
+        // Generate extra bytes to ensure we have enough characters after filtering
+        int byteLength = (int)Math.Ceiling(length * 1.5);  // 1.5 factor for Base64 padding
+        byte[] randomBytes = new byte[byteLength];
         rng.GetBytes(randomBytes);
-        return Convert.ToBase64String(randomBytes);
+
+        // Convert to Base64 string
+        string base64String = Convert.ToBase64String(randomBytes);
+
+        // Remove unwanted characters and ensure required length
+        char[] chars = ['/', '\\', '#'];
+        string result = new(base64String.Where(c => !chars.Contains(c)).ToArray());
+
+        // Return the string truncated to the requested length
+        return result.Length > length ? result[..length] : result;
     }
 
     public static byte[] ComputeHash(string input, HashAlgorithmType hashAlgorithmType, EncodingType encodingType = EncodingType.Unicode)
