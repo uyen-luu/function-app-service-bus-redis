@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Serialization;
+﻿using StackExchange.Redis;
+using System.Text.Json.Serialization;
 using static System.ArgumentException;
 namespace IPS.Grow.Func.Models;
 
@@ -39,6 +40,16 @@ public struct BusinessId(string idetifier, BusinessObjectType type)
         {
             1 => new(values[0], BusinessObjectType.Unknown),
             2 => new(values[0], Enum.TryParse<BusinessObjectType>(values[1], out var objectType) ? objectType : BusinessObjectType.Unknown),
+            _ => throw new NotSupportedException()
+        };
+    }
+
+    public RedisKey GetRedisKey()
+    {
+        return Type switch
+        {
+            BusinessObjectType.Product => $"/api/products/{Idetifier}",
+            BusinessObjectType.ProductCategories => $"/api/categories/{Idetifier}/products",
             _ => throw new NotSupportedException()
         };
     }

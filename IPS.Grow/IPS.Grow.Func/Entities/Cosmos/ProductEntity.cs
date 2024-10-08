@@ -14,5 +14,5 @@ public class ProductEntity : BaseEntity
     public decimal Price { get; set; }
     [JsonConverter(typeof(JsonStringEnumConverter))]
     public ProductStatusType Status { get; set; }
-    public string[] Categories { get; set; } = [];
+    public int[] Categories { get; set; } = [];
 }

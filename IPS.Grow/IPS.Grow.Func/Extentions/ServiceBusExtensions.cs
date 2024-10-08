@@ -6,17 +6,27 @@ namespace IPS.Grow.Func.Extentions;
 
 internal static class ServiceBusExtensions
 {
-    public static Task SendMessageAsync<TData>(this ServiceBusClient client, string queueName,
-                                               params BrokerMessage<TData>[] brokerMessages) where TData : class
+    public static Task SendMessageAsync(this ServiceBusClient client,
+                                        string queueName,
+                                        CancellationToken ct = default,
+                                        params ServiceBusMessage[] messages)
     {
         var sender = client.CreateSender(queueName);
-        var messages = brokerMessages
-           .Select(p => new ServiceBusMessage(MessageSerializer.Serialize(p)));
-        if (!messages.Any())
+        if (messages.Length == 0)
         {
             return Task.CompletedTask;
         }
         //
-        return messages.Count() == 1 ? sender.SendMessageAsync(messages.First()) : sender.SendMessagesAsync(messages);
+        return messages.Length == 1 ? sender.SendMessageAsync(messages.First(), ct) : sender.SendMessagesAsync(messages, ct);
+    }
+
+    public static ServiceBusMessage[] ToServiceBusMessages(this (BrokerMessage<ProductMessage>[] Products, BrokerMessage<ProductCategoryMessage>[] Categories) input)
+    {
+        var productMessages = input.Products
+            .Select(p => new ServiceBusMessage(MessageSerializer.Serialize(p)));
+        var categoryMessages = input.Categories
+            .Select(p => new ServiceBusMessage(MessageSerializer.Serialize(p)));
+
+        return productMessages.Union(categoryMessages).ToArray();
     }
 }

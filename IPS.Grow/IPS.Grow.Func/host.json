@@ -12,6 +12,9 @@
   "extensions": {
     "http": {
       "routePrefix": "api"
+    },
+    "durableTask": {
+      "hubName": "IPSGrow"
     }
   }
 }
