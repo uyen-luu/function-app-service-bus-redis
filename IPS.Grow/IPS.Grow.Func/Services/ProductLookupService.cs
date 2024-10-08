@@ -1,6 +1,7 @@
-﻿using IPS.Grow.Func.Configs;
-using IPS.Grow.Func.Extentions;
-using IPS.Grow.Func.Models;
+﻿using IPS.Grow.Func.Models;
+using IPS.Grow.Shared.Configs;
+using IPS.Grow.Shared.Extensions;
+using IPS.Grow.Shared.Services;
 using Microsoft.Azure.Cosmos;
 using Cosmos = IPS.Grow.Func.Entities.Cosmos;
 

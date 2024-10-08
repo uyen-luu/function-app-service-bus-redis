@@ -1,9 +1,15 @@
-﻿using IPS.Grow.Func.Entities.Cosmos;
+﻿using IPS.Grow.Shared.Configs;
+using IPS.Grow.Shared.Entities.Cosmos;
+using IPS.Grow.Shared.Services;
 using Microsoft.Azure.Cosmos;
 using Microsoft.Azure.Cosmos.Linq;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using System.Linq.Expressions;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
-namespace IPS.Grow.Func.Extentions;
+namespace IPS.Grow.Shared.Extensions;
 
 public static class CosmosServiceExtension
 {
@@ -125,4 +131,27 @@ public static class CosmosServiceExtension
         var containerResponse = await containerBuilder!.CreateIfNotExistsAsync();
         return containerResponse!.Container;
     }
+
+    public static IServiceCollection AddCosmosService(this IServiceCollection services, bool allowBulkExecution = false)
+    {
+        services.AddOptions<CosmosConfiguration>().Configure<IConfiguration>((o, c) => c.GetSection(nameof(CosmosConfiguration)).Bind(o));
+        services.AddSingleton(sp =>
+        {
+            var config = sp.GetOptionsValue<CosmosConfiguration>();
+            var options = new CosmosClientOptions()
+            {
+                UseSystemTextJsonSerializerWithOptions = new JsonSerializerOptions
+                {
+                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                    DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+                },
+                MaxRetryWaitTimeOnRateLimitedRequests = TimeSpan.FromMinutes(1), // increased from 30 seconds to 60 seconds
+                AllowBulkExecution = allowBulkExecution,
+            };
+
+            return new CosmosClient(config.ConnectionString, options);
+        });
+        return services.AddSingleton<ICosmosService, CosmosService>();
+    }
+
 }

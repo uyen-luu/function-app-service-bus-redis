@@ -1,5 +1,5 @@
 ﻿using IPS.Grow.Func.Models;
-using IPS.Grow.Func.Utilities;
+using IPS.Grow.Shared.Utilities;
 using StackExchange.Redis;
 
 namespace IPS.Grow.Func.Services;

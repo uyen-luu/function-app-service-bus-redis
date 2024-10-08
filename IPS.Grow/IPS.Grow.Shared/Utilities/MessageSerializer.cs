@@ -1,12 +1,11 @@
-﻿using IPS.Grow.Func.Models;
-using System.Text.Json;
+﻿using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace IPS.Grow.Func.Utilities;
+namespace IPS.Grow.Shared.Utilities;
 
-internal static class MessageSerializer
+public static class MessageSerializer
 {
-    private static JsonSerializerOptions JsonSerializerOptions
+    public static JsonSerializerOptions JsonSerializerOptions
     {
         get
         {
@@ -25,7 +24,4 @@ internal static class MessageSerializer
 
     public static TData? Deserialize<TData>(string input) where TData : class
         => JsonSerializer.Deserialize<TData>(input, JsonSerializerOptions);
-
-    public static BrokerMessage<TData> ToBrokerMessage<TData>(this BinaryData input) where TData : class
-       => input.ToObjectFromJson<BrokerMessage<TData>>(JsonSerializerOptions)!;
 }
