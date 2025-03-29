@@ -1,7 +1,7 @@
-﻿namespace IPS.Grow.Func.Utilities;
+﻿namespace IPS.Grow.Shared.Utilities;
 public sealed class CustomAsyncLazy<T>
 {
-    private readonly SemaphoreSlim _semaphoreSlim = new SemaphoreSlim(1, 1);
+    private readonly SemaphoreSlim _semaphoreSlim = new(1, 1);
     private readonly Func<Task<T>> _externalFactoryMethod;
     private readonly Func<Task<T>>[] _factoryMethods;
     private T? _value;
@@ -10,10 +10,10 @@ public sealed class CustomAsyncLazy<T>
     public CustomAsyncLazy(Func<Task<T>> factoryMethod)
     {
         _externalFactoryMethod = factoryMethod;
-        _factoryMethods = new Func<Task<T>>[] {
+        _factoryMethods = [
                 InternalGetValue,
                 () => Task.FromResult(_value ?? throw new ArgumentNullException(nameof(_value)))
-            };
+            ];
         _currentIndex = 0;
     }
 

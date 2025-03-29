@@ -1,12 +1,12 @@
-﻿using IPS.Grow.Func.Configs;
-using IPS.Grow.Func.Extentions;
-using IPS.Grow.Func.Utilities;
+﻿using IPS.Grow.Shared.Configs;
+using IPS.Grow.Shared.Extensions;
+using IPS.Grow.Shared.Utilities;
 using Microsoft.Azure.Cosmos;
 using Microsoft.Extensions.Options;
 using System.Collections.Concurrent;
 using static System.ArgumentException;
 
-namespace IPS.Grow.Func.Services;
+namespace IPS.Grow.Shared.Services;
 
 public interface ICosmosService
 {

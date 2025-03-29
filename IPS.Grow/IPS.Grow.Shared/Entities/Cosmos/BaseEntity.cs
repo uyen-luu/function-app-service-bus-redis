@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace IPS.Grow.Func.Entities.Cosmos;
+namespace IPS.Grow.Shared.Entities.Cosmos;
 
 public class BaseEntity
 {
@@ -8,6 +8,6 @@ public class BaseEntity
     public required string Id { get; set; }
     [JsonPropertyOrder(int.MinValue)]
     public required string Pk { get; set; }
-    public DateTime? Created { get; set; }
+    public DateTime Created { get; set; }
     public DateTime? LastModified { get; set; }
 }

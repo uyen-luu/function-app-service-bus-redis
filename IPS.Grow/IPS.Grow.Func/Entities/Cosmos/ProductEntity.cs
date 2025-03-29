@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Serialization;
+﻿using IPS.Grow.Shared.Entities.Cosmos;
+using System.Text.Json.Serialization;
 
 namespace IPS.Grow.Func.Entities.Cosmos;
 

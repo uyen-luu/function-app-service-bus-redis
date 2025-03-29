@@ -1,4 +1,5 @@
 using IPS.Grow.Func.Extentions;
+using IPS.Grow.Shared.Extensions;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;

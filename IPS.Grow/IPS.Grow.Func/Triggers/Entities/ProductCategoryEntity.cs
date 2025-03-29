@@ -1,9 +1,10 @@
-﻿using IPS.Grow.Func.Configs;
-using IPS.Grow.Func.Entities.Cosmos;
-using IPS.Grow.Func.Extentions;
+﻿using IPS.Grow.Func.Entities.Cosmos;
 using IPS.Grow.Func.Models;
 using IPS.Grow.Func.Services;
-using IPS.Grow.Func.Utilities;
+using IPS.Grow.Shared.Configs;
+using IPS.Grow.Shared.Extensions;
+using IPS.Grow.Shared.Services;
+using IPS.Grow.Shared.Utilities;
 using Microsoft.Azure.Cosmos;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.DurableTask.Entities;
@@ -56,7 +57,7 @@ internal class ProductCategoryEntity(ICosmosService cosmosService) : TaskEntity<
             Name = input!.Name,
             Pk = Pk,
             Status = ProductStatusType.Active,
-            Created = State!.Created.HasValue ? State!.Created : DateTime.UtcNow,
+            Created = State!.Created.HasValue ? State!.Created.Value : DateTime.UtcNow,
             LastModified = State!.Created.HasValue ? DateTime.UtcNow : null,
         };
 
